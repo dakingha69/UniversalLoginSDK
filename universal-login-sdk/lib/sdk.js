@@ -16,6 +16,22 @@ class EthereumIdentitySDK {
     this.blockchainObserver = new BlockchainObserver(provider);
     this.defaultPaymentOptions = {...DEFAULT_PAYMENT_OPTIONS, ...paymentOptions};
   }
+  
+  createOnboardingLink(
+    baseUrl,
+    senderPrivateKey,
+    senderName,
+    tokenAddress,
+    tokenId
+  ) {
+    const senderWallet = new ethers.Wallet(senderPrivateKey, this.provider);
+    const transitPrivateKey = this.generatePrivateKey();
+    const transitWallet = new ethers.Wallet(transitPrivateKey, this.provider);
+    const transitAddress = transitWallet.address;
+    const transitSig = senderWallet.signMessage(transitAddress);
+    return `${baseUrl}?privateKey=${transitPrivateKey}&signature=${transitSig}&` +
+      `tokenAddress=${tokenAddress}&tokenId=${tokenId}&sender=${senderName}`
+  }
 
   async create(ensName) {
     const privateKey = this.generatePrivateKey();
