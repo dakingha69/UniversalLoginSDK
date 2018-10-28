@@ -11,7 +11,7 @@ import DEFAULT_PAYMENT_OPTIONS from './config';
 class EthereumIdentitySDK {
   constructor(relayerUrl, provider, paymentOptions) {
     this.provider = provider;
-    this.relayerUrl = 'http://4b9d0325.ngrok.io';
+    this.relayerUrl = relayerUrl;
     this.relayerObserver = new RelayerObserver(relayerUrl);
     this.blockchainObserver = new BlockchainObserver(provider);
     this.defaultPaymentOptions = {...DEFAULT_PAYMENT_OPTIONS, ...paymentOptions};
