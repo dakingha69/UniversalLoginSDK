@@ -19,18 +19,51 @@ class EthereumIdentitySDK {
   
   createOnboardingLink(
     baseUrl,
-    senderPrivateKey,
-    senderName,
+    privateKeySender,
+    ensNameSender,
     tokenAddress,
     tokenId
   ) {
-    const senderWallet = new ethers.Wallet(senderPrivateKey, this.provider);
-    const transitPrivateKey = this.generatePrivateKey();
-    const transitWallet = new ethers.Wallet(transitPrivateKey, this.provider);
-    const transitAddress = transitWallet.address;
-    const transitSig = senderWallet.signMessage(transitAddress);
-    return `${baseUrl}?privateKey=${transitPrivateKey}&signature=${transitSig}&` +
-      `tokenAddress=${tokenAddress}&tokenId=${tokenId}&sender=${senderName}`
+    const walletSender = new ethers.Wallet(privateKeySender, this.provider);
+    const privateKeyTransit = this.generatePrivateKey();
+    const walletTransit = new ethers.Wallet(privateKeyTransit, this.provider);
+    const addressTransit = walletTransit.address;
+    const signatureTransit = walletSender.signMessage(addressToBytes32(addressTransit));
+    return `${baseUrl}?privateKey=${privateKeyTransit}&signature=${signatureTransit}&` +
+      `tokenAddress=${tokenAddress}&tokenId=${tokenId}&sender=${ensNameSender}`
+  }
+
+  async claimOnboardingLink(
+    privateKeyTransit,
+    signatureTransit,
+    tokenAddress,
+    tokenId,
+    ensNameReceiver
+  ) {
+    const privateKeyReceiver = this.generatePrivateKey();
+    const walletReceiver = new ethers.Wallet(privateKeyReceiver, this.provider);
+    const addressReceiver = walletReceiver.address;
+    const walletTransit = new ethers.Wallet(privateKeyTransit, this.provider);
+    const addressTransit = walletTransit.address;
+    const signatureReceiver = walletTransit.signMessage(addressToBytes32(addressReceiver));
+    const url = `${this.relayerUrl}/claim-by-link`;
+    const method = 'POST';
+    const body = JSON.stringify({
+      signatureReceiver,
+      signatureTransit,
+      addressReceiver,
+      addressTransit,
+      tokenAddress,
+      tokenId,
+      ensNameReceiver
+    });
+    const response = await fetch(url, {headers, method, body});
+    const responseJson = await response.json();
+    if (response.status === 201) {
+      const receipt = await waitForTransactionReceipt(this.provider, responseJson.transaction.hash);
+      return [privateKeyReceiver, receipt.contractAddress];
+    }
+    throw new Error(`${response.status}`);
   }
 
   async create(ensName) {
