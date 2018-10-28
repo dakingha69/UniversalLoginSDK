@@ -21,6 +21,7 @@ class EthereumIdentitySDK {
     baseUrl,
     senderPrivateKey,
     senderEnsName,
+    senderIdentityAddress,
     tokenAddress,
     tokenId
   ) {
@@ -31,7 +32,7 @@ class EthereumIdentitySDK {
     const transitAddress = transitWallet.address;
     const transitSignature = senderWallet.signMessage(addressToBytes32(transitAddress));
     return `${baseUrl}?privateKey=${transitPrivateKey}&signature=${transitSignature}&` +
-      `tokenAddress=${tokenAddress}&tokenId=${tokenId}&senderName=${senderEnsName}&senderAddress=${senderAddress}`
+      `tokenAddress=${tokenAddress}&tokenId=${tokenId}&senderName=${senderEnsName}&senderAddress=${senderIdentityAddress}`
   }
 
   async claimOnboardingLink(
