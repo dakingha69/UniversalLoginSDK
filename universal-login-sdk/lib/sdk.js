@@ -63,8 +63,9 @@ class EthereumIdentitySDK {
     const response = await fetch(url, {headers, method, body});
     const responseJson = await response.json();
     if (response.status === 201) {
-      const receipt = await waitForTransactionReceipt(this.provider, responseJson.transaction.hash);
-      return [receiverPrivateKey, receipt.contractAddress];
+      console.log(responseJson)
+      // const receipt = await waitForTransactionReceipt(this.provider, responseJson.transaction.hash);
+      return [receiverPrivateKey, responseJson.transaction.hash];
     }
     throw new Error(`${response.status}`);
   }
