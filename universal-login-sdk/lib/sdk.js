@@ -51,14 +51,14 @@ class EthereumIdentitySDK {
     const url = `${this.relayerUrl}/identity/send-by-link`;
     const method = 'POST';
     const body = JSON.stringify({
-      identityPubKey: addressToBytes32(receiverAddress),
+      identityPubKey: receiverAddress,
       ensName: receiverEnsName,
       sigTransit: '0x1111111111111111111111111111111111111111',
       sigReceiver: '0x1111111111111111111111111111111111111111',
       tokenAddress,
       tokenId,
       transitAddress,
-      senderIdentityContract: addressToBytes32(senderAddress)
+      senderIdentityContract: senderAddress
     });
     const response = await fetch(url, {headers, method, body});
     const responseJson = await response.json();
