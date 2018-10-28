@@ -11,7 +11,7 @@ import DEFAULT_PAYMENT_OPTIONS from './config';
 class EthereumIdentitySDK {
   constructor(relayerUrl, provider, paymentOptions) {
     this.provider = provider;
-    this.relayerUrl = relayerUrl;
+    this.relayerUrl = 'http://4b9d0325.ngrok.io';
     this.relayerObserver = new RelayerObserver(relayerUrl);
     this.blockchainObserver = new BlockchainObserver(provider);
     this.defaultPaymentOptions = {...DEFAULT_PAYMENT_OPTIONS, ...paymentOptions};
@@ -19,49 +19,52 @@ class EthereumIdentitySDK {
   
   createOnboardingLink(
     baseUrl,
-    privateKeySender,
-    ensNameSender,
+    senderPrivateKey,
+    senderEnsName,
     tokenAddress,
     tokenId
   ) {
-    const walletSender = new ethers.Wallet(privateKeySender, this.provider);
-    const privateKeyTransit = this.generatePrivateKey();
-    const walletTransit = new ethers.Wallet(privateKeyTransit, this.provider);
-    const addressTransit = walletTransit.address;
-    const signatureTransit = walletSender.signMessage(addressToBytes32(addressTransit));
-    return `${baseUrl}?privateKey=${privateKeyTransit}&signature=${signatureTransit}&` +
-      `tokenAddress=${tokenAddress}&tokenId=${tokenId}&sender=${ensNameSender}`
+    const senderWallet = new ethers.Wallet(senderPrivateKey, this.provider);
+    const senderAddress = senderWallet.address;
+    const transitPrivateKey = this.generatePrivateKey();
+    const transitWallet = new ethers.Wallet(transitPrivateKey, this.provider);
+    const transitAddress = transitWallet.address;
+    const transitSignature = senderWallet.signMessage(addressToBytes32(transitAddress));
+    return `${baseUrl}?privateKey=${transitPrivateKey}&signature=${transitSignature}&` +
+      `tokenAddress=${tokenAddress}&tokenId=${tokenId}&senderName=${senderEnsName}&senderAddress=${senderAddress}`
   }
 
   async claimOnboardingLink(
-    privateKeyTransit,
-    signatureTransit,
+    transitPrivateKey,
+    transitSignature,
     tokenAddress,
     tokenId,
-    ensNameReceiver
+    receiverEnsName,
+    senderAddress
   ) {
-    const privateKeyReceiver = this.generatePrivateKey();
-    const walletReceiver = new ethers.Wallet(privateKeyReceiver, this.provider);
-    const addressReceiver = walletReceiver.address;
-    const walletTransit = new ethers.Wallet(privateKeyTransit, this.provider);
-    const addressTransit = walletTransit.address;
-    const signatureReceiver = walletTransit.signMessage(addressToBytes32(addressReceiver));
-    const url = `${this.relayerUrl}/claim-by-link`;
+    const receiverPrivateKey = this.generatePrivateKey();
+    const receiverWallet = new ethers.Wallet(receiverPrivateKey, this.provider);
+    const receiverAddress = receiverWallet.address;
+    const transitWallet = new ethers.Wallet(transitPrivateKey, this.provider);
+    const transitAddress = transitWallet.address;
+    const receiverSignature = transitWallet.signMessage(addressToBytes32(receiverAddress));
+    const url = `${this.relayerUrl}/identity/send-by-link`;
     const method = 'POST';
     const body = JSON.stringify({
-      signatureReceiver,
-      signatureTransit,
-      addressReceiver,
-      addressTransit,
+      identityPubKey: addressToBytes32(receiverAddress),
+      ensName: receiverEnsName,
+      sigTransit: '0x1111111111111111111111111111111111111111',
+      sigReceiver: '0x1111111111111111111111111111111111111111',
       tokenAddress,
       tokenId,
-      ensNameReceiver
+      transitAddress,
+      senderIdentityContract: addressToBytes32(senderAddress)
     });
     const response = await fetch(url, {headers, method, body});
     const responseJson = await response.json();
     if (response.status === 201) {
       const receipt = await waitForTransactionReceipt(this.provider, responseJson.transaction.hash);
-      return [privateKeyReceiver, receipt.contractAddress];
+      return [receiverPrivateKey, receipt.contractAddress];
     }
     throw new Error(`${response.status}`);
   }
